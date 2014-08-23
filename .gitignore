@@ -1,1 +1,9 @@
 /cookbooks/
+/.vagrant/
+
+## generic files to ignore
+*~
+*.lock
+*.DS_Store
+*.swp
+*.out
