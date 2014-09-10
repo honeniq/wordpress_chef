@@ -7,10 +7,16 @@
 # All rights reserved - Do Not Redistribute
 #
 
+
+
+
+
+
+
 # vagrant かそうでないかでuser名を変更
 user = File.exists?("/vagrant") ? "vagrant" : "ubuntu" 
 wordpress = "wordpress-4.0-ja.tar.gz"
- 
+
 cookbook_file "wordpress" do
   source wordpress
   user user

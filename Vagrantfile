@@ -15,11 +15,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.omnibus.chef_version = :latest
   
   config.vm.provision "chef_solo" do |chef|
-    chef.add_recipe "nginx"
-    chef.add_recipe "php"
-    chef.add_recipe "mysql::server"
-    chef.add_recipe "git"
-    chef.add_recipe "vim"
+    chef.add_recipe "yum-epel"
     chef.add_recipe "wordpress"
     #chef.run_list = [
     #    #"recipe[apache2]",
