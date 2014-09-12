@@ -8,9 +8,27 @@
 #
 
 
+%w{nginx php-fpm mysql}.each do |pkg|
+  package pkg do
+    action :install
+  end
+end
+
+template 'nginx.conf' do
+  path '/etc/nginx/nginx.conf'
+  source "nginx.conf.erb"
+  owner 'root'
+  group 'root'
+  mode '0644'
+  notifies :reload, "service[nginx]"
+end
 
 
 
+service "nginx" do
+  action [ :enable, :start ]
+  supports :status => true, :restart => true, :reload => true
+end
 
 
 # vagrant かそうでないかでuser名を変更
