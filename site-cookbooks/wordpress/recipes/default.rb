@@ -8,7 +8,7 @@
 #
 
 
-%w{nginx php-fpm mysql}.each do |pkg|
+%w{nginx php-fpm mysql-server}.each do |pkg|
   package pkg do
     action :install
   end
@@ -23,9 +23,30 @@ template 'nginx.conf' do
   notifies :reload, "service[nginx]"
 end
 
-
-
 service "nginx" do
+  action [ :enable, :start ]
+  supports :status => true, :restart => true, :reload => true
+end
+
+
+
+template 'www.conf' do
+  path '/etc/php-fpm.d/www.conf'
+  source "www.conf.erb"
+  owner 'root'
+  group 'root'
+  mode '0644'
+  notifies :reload, "service[php-fpm]"
+end
+
+
+service "php-fpm" do
+  action [ :enable, :start ]
+  supports :status => true, :restart => true, :reload => true
+end
+
+
+service "mysqld" do
   action [ :enable, :start ]
   supports :status => true, :restart => true, :reload => true
 end
