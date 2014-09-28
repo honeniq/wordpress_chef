@@ -7,12 +7,12 @@
 # All rights reserved - Do Not Redistribute
 #
 
-
-%w{nginx php-fpm mysql-server}.each do |pkg|
+%w{nginx php-fpm mysql mysql-server}.each do |pkg|
   package pkg do
     action :install
   end
 end
+
 
 template 'nginx.conf' do
   path '/etc/nginx/nginx.conf'
@@ -22,6 +22,7 @@ template 'nginx.conf' do
   mode '0644'
   notifies :reload, "service[nginx]"
 end
+
 
 service "nginx" do
   action [ :enable, :start ]
@@ -46,9 +47,23 @@ service "php-fpm" do
 end
 
 
+
 service "mysqld" do
   action [ :enable, :start ]
   supports :status => true, :restart => true, :reload => true
+end
+
+execute "set root password" do
+  command "mysqladmin -u root password '#{node['mysql']['server_root_password']}'"
+  only_if "mysql -u root -e 'show databases;'"
+end
+
+template "/tmp/schema.sql" do
+  source "schema.sql.erb"
+end
+
+execute 'apply schema' do
+  #command "mysql -uroot -Dmysql < wordpress.sql"
 end
 
 
