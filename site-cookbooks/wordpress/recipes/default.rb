@@ -7,13 +7,14 @@
 # All rights reserved - Do Not Redistribute
 #
 
-%w{nginx php-fpm mysql mysql-server}.each do |pkg|
+%w{nginx php-fpm php-mysql php-common php php-cgi php-gd php-mbstring mysql mysql-server}.each do |pkg|
   package pkg do
     action :install
   end
 end
 
 
+# nginx
 template 'nginx.conf' do
   path '/etc/nginx/nginx.conf'
   source "nginx.conf.erb"
@@ -23,6 +24,14 @@ template 'nginx.conf' do
   notifies :reload, "service[nginx]"
 end
 
+template 'default.conf' do
+  path '/etc/nginx/conf.d/default.conf'
+  source "default.conf.erb"
+  owner 'root'
+  group 'root'
+  mode '0644'
+  notifies :reload, "service[nginx]"
+end
 
 service "nginx" do
   action [ :enable, :start ]
@@ -31,6 +40,7 @@ end
 
 
 
+# php-fpm
 template 'www.conf' do
   path '/etc/php-fpm.d/www.conf'
   source "www.conf.erb"
@@ -40,7 +50,6 @@ template 'www.conf' do
   notifies :reload, "service[php-fpm]"
 end
 
-
 service "php-fpm" do
   action [ :enable, :start ]
   supports :status => true, :restart => true, :reload => true
@@ -48,25 +57,29 @@ end
 
 
 
+# MySQL
 service "mysqld" do
   action [ :enable, :start ]
   supports :status => true, :restart => true, :reload => true
 end
 
-execute "set root password" do
-  command "mysqladmin -u root password '#{node['mysql']['server_root_password']}'"
-  only_if "mysql -u root -e 'show databases;'"
+cookbook_file "setupdb" do
+  source "setupdb.sql"
+  user user
+  group user
+  path "/home/vagrant/setupdb.sql"
+end
+ 
+execute "setup database" do
+  user user
+  group user
+  command "mysql -uroot -Dmysql < /home/vagrant/setupdb.sql"
+  action :run
 end
 
-template "/tmp/schema.sql" do
-  source "schema.sql.erb"
-end
-
-execute 'apply schema' do
-  #command "mysql -uroot -Dmysql < wordpress.sql"
-end
 
 
+# Wordpress
 # vagrant かそうでないかでuser名を変更
 user = File.exists?("/vagrant") ? "vagrant" : "ubuntu" 
 wordpress = "wordpress-4.0-ja.tar.gz"
@@ -77,10 +90,27 @@ cookbook_file "wordpress" do
   group user
   path "/home/#{user}/#{wordpress}"
 end
- 
+
+directory "/var/www/html" do
+  owner "nginx"
+  group "nginx"
+  recursive true
+  mode 0755
+  action :create
+end
+
 execute "install wordpress" do
   user user
   group user
-  command "tar zxvf /home/#{user}/#{wordpress} -C /home/#{user}/"
+  command "sudo tar zxvf /home/#{user}/#{wordpress} -C /var/www/html/"
   action :run
 end
+
+template 'wp-config.php' do
+  path '/var/www/html/wordpress/wp-config.php'
+  source "wp-config.php.erb"
+  owner 'nginx'
+  group 'nginx'
+  mode '0644'
+end
+
